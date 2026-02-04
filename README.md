@@ -10,6 +10,7 @@ This Terraform project provides a production-ready infrastructure setup for AWS 
 
 The infrastructure is organized into modular Terraform configurations:
 
+```mermaid
 graph TB
     subgraph "AWS Infrastructure as Code"
         direction TB
@@ -167,13 +168,7 @@ graph TB
     style VPCOutputs fill:#e1f5fe
     style IAMOutputs fill:#f3e5f5
 
----
-
-## Detailed Infrastructure Dependencies
-
-![Terraform Dependency Graph](./diagram.svg)
-
-*Generated with `terraform graph | dot -Tsvg` - shows actual resource dependencies*
+```
 
 ---
 
