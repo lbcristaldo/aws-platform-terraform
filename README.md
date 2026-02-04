@@ -10,163 +10,109 @@ This Terraform project provides a production-ready infrastructure setup for AWS 
 
 The infrastructure is organized into modular Terraform configurations:
 
-```mermaid
+```mermaid 
 graph TB
-    subgraph "AWS Infrastructure as Code"
+    %% Definición de estilos de colores vibrantes
+    classDef vpc fill:#0091EA,stroke:#01579B,stroke-width:2px,color:#fff;
+    classDef iam fill:#9C27B0,stroke:#4A148C,stroke-width:2px,color:#fff;
+    classDef security fill:#FF5252,stroke:#B71C1C,stroke-width:2px,color:#fff;
+    classDef rds fill:#4CAF50,stroke:#1B5E20,stroke-width:2px,color:#fff;
+    classDef eks fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff;
+    classDef outputs fill:#00BCD4,stroke:#006064,stroke-width:2px,color:#fff;
+    classDef vars fill:#607D8B,stroke:#263238,stroke-width:2px,color:#fff;
+
+    subgraph AWS_CLOUD ["☁️ INFRAESTRUCTURA AWS AS CODE (TERRAFORM)"]
         direction TB
-        
-        subgraph "Módulo VPC"
-            VPC[aws_vpc.main]
-            IGW[aws_internet_gateway.main]
-            PubSub[aws_subnet.public]
-            PrivSub[aws_subnet.private]
-            NAT[aws_nat_gateway.main]
-            RT[Route Tables]
-            FL[VPC Flow Logs]
+
+        %% Módulo de Red
+        subgraph MOD_VPC ["🌐 CAPA DE RED (VPC)"]
+            direction TB
+            VPC[("🏠 Main VPC<br/>10.0.0.0/16")]
+            PubSub["☀️ Public Subnets<br/>(NAT + IGW)"]
+            PrivSub["🔐 Private Subnets<br/>(Workloads)"]
+            IGW["🌍 Internet Gateway"]
+            NAT["⚡ NAT Gateway"]
             
             VPC --> IGW
             VPC --> PubSub
             VPC --> PrivSub
             PubSub --> NAT
-            NAT --> RT
-            RT --> PrivSub
-            VPC --> FL
+            NAT -.-> PrivSub
         end
-        
-        subgraph "Módulo IAM-BASE"
+
+        %% Módulo de Seguridad
+        subgraph MOD_SEC ["🛡️ CAPA DE SEGURIDAD"]
+            direction LR
+            SGR["🔒 Security Groups"]
+            KMS["🔑 KMS Encryption"]
+            Secrets["🕵️ Secrets Manager"]
+        end
+
+        %% Módulo IAM
+        subgraph MOD_IAM ["🆔 IDENTIDAD Y ACCESOS (IAM)"]
             direction TB
-            
-            subgraph "EKS IAM Roles"
-                EKSClusterRole[aws_iam_role.eks_cluster]
-                EKSNodeRole[aws_iam_role.eks_nodes]
-                ClusterPolicy[Cluster Policy Attachments]
-                NodePolicy[Node Policy Attachments]
-                SecretsPolicy[Secrets Manager Policy]
-            end
-            
-            subgraph "IRSA IAM Roles"
-                ClusterAutoscalerRole[aws_iam_role.cluster_autoscaler]
-                ALBControllerRole[aws_iam_role.aws_load_balancer_controller]
-                ClusterAutoscalerPolicy[Cluster Autoscaler Policy]
-                ALBControllerPolicy[ALB Controller Policy]
-            end
+            EKS_R["🏗️ Cluster Roles"]
+            Node_R["🚜 Node Roles"]
+            IRSA["🧬 IRSA (OIDC)"]
         end
-        
-        subgraph "Módulo Security"
+
+        %% Módulo RDS
+        subgraph MOD_RDS ["💾 BASE DE DATOS (RDS)"]
             direction TB
-            
-            EKSControlPlaneSG[aws_security_group.eks_control_plane]
-            EKSNodeSG[aws_security_group.eks_nodes]
-            RDSSG[aws_security_group.rds]
-            ALBSG[aws_security_group.alb]
-            SGRules[Security Group Rules]
-            NACL[Network ACLs - Opcional]
+            RDSI["🛢️ RDS Postgres/MySQL"]
+            DB_PG["⚙️ Parameter Group"]
+            DB_SG["📡 DB Subnet Group"]
         end
-        
-        subgraph "Módulo RDS"
+
+        %% Módulo EKS
+        subgraph MOD_EKS ["☸️ COMPUTE (EKS CLUSTER)"]
             direction TB
-            
-            KMSRDS[aws_kms_key.rds]
-            DBSubnetGroup[aws_db_subnet_group.main]
-            DBParamGroup[aws_db_parameter_group.main]
-            RDSInstance[aws_db_instance.main]
-            SecretsManager[aws_secretsmanager_secret.rds_master]
-            MonitoringRole[aws_iam_role.rds_monitoring]
-            CloudWatchAlarms[RDS CloudWatch Alarms]
-            
-            KMSRDS --> RDSInstance
-            DBSubnetGroup --> RDSInstance
-            DBParamGroup --> RDSInstance
-            SecretsManager --> RDSInstance
-            MonitoringRole --> RDSInstance
+            EKS_C["🎮 Control Plane"]
+            EKS_N["💻 Managed Node Groups"]
+            EKS_A["🧩 EKS Add-ons"]
         end
-        
-        subgraph "Módulo EKS"
-            direction TB
-            
-            KMSEKS[aws_kms_key.eks]
-            EKSCluster[aws_eks_cluster.main]
-            OIDCProvider[aws_iam_openid_connect_provider.eks]
-            LaunchTemplate[aws_launch_template.eks_nodes]
-            NodeGroup[aws_eks_node_group.main]
-            EKSAddons[EKS Addons]
-            CWLogs[CloudWatch Log Group]
-            
-            KMSEKS --> EKSCluster
-            EKSCluster --> OIDCProvider
-            LaunchTemplate --> NodeGroup
-            EKSCluster --> NodeGroup
-            EKSCluster --> EKSAddons
-            EKSCluster --> CWLogs
-        end
-        
-        %% Dependencias entre módulos
-        VPC --> EKSControlPlaneSG
-        VPC --> EKSNodeSG
-        VPC --> RDSSG
-        VPC --> ALBSG
-        
-        PrivSub --> DBSubnetGroup
-        PrivSub --> NodeGroup
-        
-        EKSClusterRole --> EKSCluster
-        EKSNodeRole --> NodeGroup
-        
-        EKSControlPlaneSG --> EKSCluster
-        EKSNodeSG --> NodeGroup
-        RDSSG --> RDSInstance
-        
-        OIDCProvider -.-> ClusterAutoscalerRole
-        OIDCProvider -.-> ALBControllerRole
-        
-        %% Flujo de creación
-        IAM-BASE --> Security
-        VPC --> Security
-        VPC --> RDS
-        VPC --> EKS
-        Security --> RDS
-        Security --> EKS
-        IAM-BASE --> EKS
     end
+
+    %% Relaciones Lógicas de Flujo
+    MOD_VPC ==> MOD_SEC
+    MOD_IAM ==> MOD_EKS
+    MOD_SEC ==> MOD_RDS
+    MOD_VPC ==> MOD_EKS
+    MOD_SEC ==> MOD_EKS
     
-    subgraph "Outputs Destacados"
-        EKSOutputs["EKS:<br/>• cluster_endpoint<br/>• oidc_provider_arn<br/>• node_group_id"]
-        RDSOutputs["RDS:<br/>• db_instance_endpoint<br/>• secret_arn<br/>• kms_key_arn"]
-        VPCOutputs["VPC:<br/>• vpc_id<br/>• private_subnet_ids<br/>• nat_gateway_ips"]
-        IAMOutputs["IAM:<br/>• eks_nodes_role_arn<br/>• cluster_autoscaler_role_arn"]
-        
-        EKS --> EKSOutputs
-        RDS --> RDSOutputs
-        VPC --> VPCOutputs
-        IAM-BASE --> IAMOutputs
+    %% Conexiones específicas de alto nivel
+    PrivSub -.-> EKS_N
+    PrivSub -.-> RDSI
+    IRSA -.-> EKS_A
+
+    %% Panel de Variables (Entradas)
+    subgraph INPUTS ["📥 PARÁMETROS DE ENTRADA"]
+        direction LR
+        V1["🏷️ Project Tags"]
+        V2["📏 CIDR Blocks"]
+        V3["🚀 Instance Types"]
     end
-    
-    subgraph "Variables Principales"
-        CommonVars["project_name, tags"]
-        NetworkVars["vpc_cidr, availability_zones"]
-        EKSVars["cluster_name, kubernetes_version"]
-        RDSVars["instance_class, engine_version"]
+    INPUTS ==> AWS_CLOUD
+
+    %% Panel de Resultados (Salidas)
+    subgraph OUTS ["📤 OUTPUTS RELEVANTES"]
+        direction TB
+        O1["🔗 EKS Endpoint"]
+        O2["🔌 DB Connection String"]
+        O3["🆔 IAM Role ARNs"]
     end
-    
-    CommonVars -.-> VPC
-    CommonVars -.-> IAM-BASE
-    CommonVars -.-> Security
-    CommonVars -.-> RDS
-    CommonVars -.-> EKS
-    
-    NetworkVars --> VPC
-    EKSVars --> EKS
-    RDSVars --> RDS
-    
-    style VPC fill:#e1f5fe
-    style IAM-BASE fill:#f3e5f5
-    style Security fill:#fce4ec
-    style RDS fill:#e8f5e8
-    style EKS fill:#fff3e0
-    style EKSOutputs fill:#bbdefb
-    style RDSOutputs fill:#c8e6c9
-    style VPCOutputs fill:#e1f5fe
-    style IAMOutputs fill:#f3e5f5
+    MOD_EKS --> O1
+    MOD_RDS --> O2
+    MOD_IAM --> O3
+
+    %% Aplicación de estilos
+    class VPC,PubSub,PrivSub,IGW,NAT vpc;
+    class EKS_R,Node_R,IRSA iam;
+    class SGR,KMS,Secrets security;
+    class RDSI,DB_PG,DB_SG rds;
+    class EKS_C,EKS_N,EKS_A eks;
+    class O1,O2,O3 outputs;
+    class V1,V2,V3 vars;
 
 ```
 
