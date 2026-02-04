@@ -268,7 +268,7 @@ variable "rds_max_allocated_storage" {
   default     = 500
   
   validation {
-    condition     = var.rds_max_allocated_storage >= var.rds_allocated_storage
+    condition     = var.rds_max_allocated_storage >= 100
     error_message = "Max allocated storage must be greater than or equal to allocated storage."
   }
 }

@@ -1,0 +1,26 @@
+# Terraform
+**/.terraform/*
+!.terraform/plugins
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/*.tfvars
+**/*.tfvars.json
+
+# Provider binaries
+**/terraform-provider-*
+
+# Lock files
+.terraform.lock.hcl
+
+# Sensitive data
+**/.env
+**/*.pem
+**/*.key
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,90 @@
+# Example Terraform Variables File
+# Copy this to terraform.tfvars and customize for your environment
+
+project_name = "aws-platform"
+aws_region = "us-east-1"
+environment = "prod"
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+az_count = 3
+enable_nat_gateway = true
+enable_flow_logs = true
+enable_nacls = false
+
+# IAM Configuration
+enable_ssm_access = true
+enable_cluster_autoscaler = true
+enable_alb_controller = true
+
+# EKS Configuration
+kubernetes_version = "1.29"
+eks_endpoint_private_access = true
+eks_endpoint_public_access = true
+eks_public_access_cidrs = ["10.0.0.0/16"]  # Restrict to VPC in production
+eks_enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+eks_cluster_log_retention_days = 30
+
+# EKS Node Group Configuration
+eks_node_instance_types = ["t3.medium"]
+eks_node_capacity_type = "ON_DEMAND"
+eks_node_disk_size = 50
+eks_node_min_size = 3
+eks_node_max_size = 50
+eks_node_desired_size = 3
+eks_node_labels = {
+  "environment" = "prod"
+  "managed-by" = "terraform"
+}
+
+# EKS Addon Versions (use null for latest)
+eks_vpc_cni_version = null
+eks_coredns_version = null
+eks_kube_proxy_version = null
+eks_ebs_csi_driver_version = null
+eks_enable_cloudwatch_alarms = true
+
+# RDS Configuration
+rds_engine_version = "16"
+rds_instance_class = "db.t3.medium"
+rds_master_username = "dbadmin"
+
+# RDS Storage Configuration
+rds_allocated_storage = 100
+rds_max_allocated_storage = 500
+rds_iops = 3000
+rds_storage_throughput = 125
+rds_multi_az = true
+
+# RDS Backup Configuration
+rds_backup_retention_period = 7
+rds_backup_window = "03:00-04:00"
+rds_maintenance_window = "sun:04:00-sun:05:00"
+rds_skip_final_snapshot = false
+
+# RDS Monitoring Configuration
+rds_monitoring_interval = 60
+rds_enable_performance_insights = true
+rds_performance_insights_retention = 7
+rds_enable_cloudwatch_alarms = true
+rds_connection_alarm_threshold = 80
+
+# RDS Secrets Manager Rotation
+rds_enable_secret_rotation = false
+rds_rotation_lambda_arn = ""
+rds_rotation_days = 30
+
+# RDS Security
+rds_deletion_protection = true
+rds_auto_minor_version_upgrade = true
+
+# Tags
+common_tags = {
+  Project = "aws-platform"
+  Environment = "prod"
+  ManagedBy = "terraform"
+  Owner = "platform-team"
+  CostCenter = "engineering"
+  Department = "platform"
+  Application = "infrastructure"
+}
